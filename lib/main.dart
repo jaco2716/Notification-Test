@@ -1,4 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:notification_test/retrofit/api_client.dart';
+import 'package:retrofit/retrofit.dart';
+import 'package:http/http.dart';
 
 void main() {
   runApp(MyApp());
@@ -52,6 +58,70 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
+  // Replace with server token from firebase console settings.
+  final String serverToken =
+      'AAAAxe4Gu-k:APA91bGrvPYJ5k6954gPvj6N6RqosDhzzfD9c56-qjMPqF8S5DHr2mbfeFg1MSf0L9o8cKr73UsA7zxnwMtyWqXvkq0ufxRiH3hAXKaXMmNvesZls2XK6oSHCi8akWFTerDG94VfGq40';
+
+  Future<Map<String, dynamic>> sendAndRetrieveMessage() async {
+    await post(
+      'https://fcm.googleapis.com/fcm/send',
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'key=$serverToken',
+      },
+      body: jsonEncode(
+        <String, dynamic>{
+          'notification': <String, dynamic>{
+            'body': 'this is a body',
+            'title': 'this is a title'
+          },
+          'priority': 'high',
+          'data': <String, dynamic>{
+            'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+            'id': '1',
+            'status': 'done'
+          },
+          'to':
+              'dezmajfzTf20SXB30VzOqY:APA91bGWgdfJR9o2hw-buiJMQAaKJBldxNjjXt_SnbA7j99wB1JfW-pXJq-OIz4ceDUpyi6n1_H5g8FNkvgWJJKBmY11w3fYTnlfS1HDyOeyUKOKO6StVUUG51eADq0hH_JfNrNXb1Nk',
+        },
+      ),
+    );
+  }
+
+  void _postToFcm() {
+    NotificationData createdTask = NotificationData(
+        notification: FcmNotification(title: "Ny Ordre", body: "Du modtog en odrer fra Jacob!"),
+        priority: 'high',
+        data: FcmData(
+            clickAction: 'FLUTTER_NOTIFICATION_CLICK', id: '1', status: 'done'),
+        to: 'dezmajfzTf20SXB30VzOqY:APA91bGWgdfJR9o2hw-buiJMQAaKJBldxNjjXt_SnbA7j99wB1JfW-pXJq-OIz4ceDUpyi6n1_H5g8FNkvgWJJKBmY11w3fYTnlfS1HDyOeyUKOKO6StVUUG51eADq0hH_JfNrNXb1Nk');
+    List<NotificationData> newTask;
+    print(createdTask.toJson().toString());
+    //print('Getting Tasks...');
+    final dio = Dio(); // Provide a dio instance
+    final client = RestClient(dio);
+    // client
+    //     .getTasks()
+    //     .then((response) => print('Task count: ' + response.length.toString()));
+
+    client.createNotification(createdTask).then((response) {
+      NotificationData notiCreatedresponse = response;
+      print("Sending Notification..");
+    }).catchError((Object obj) {
+      // non-200 error goes here.
+      switch (obj.runtimeType) {
+        case DioError:
+          // Here's the sample to get the failed response error code and message
+          final res = (obj as DioError).response;
+          print("Got error : ${res.statusCode} -> ${res.statusMessage}");
+          print("error thrown");
+          break;
+        default:
+          print('default error: > ' + obj.toString());
+      }
+    });
+  }
+
   void _incrementCounter() {
     setState(() {
       // This call to setState tells the Flutter framework that something has
@@ -60,6 +130,8 @@ class _MyHomePageState extends State<MyHomePage> {
       // _counter without calling setState(), then the build method would not be
       // called again, and so nothing would appear to happen.
       _counter++;
+      //sendAndRetrieveMessage();
+      _postToFcm();
     });
   }
 
